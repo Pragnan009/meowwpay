@@ -20,13 +20,15 @@ class RequestManager {
     vector<MoneyRequest> requests;
     int reqCounter = 1;
 
+    bool validId(const string& id);
+
 public:
     void requestMoney(string from, string to, int amount, vector<User>& users);
     void respond(string id, string userId, bool accept, vector<User>& users);
     void showRequests(string userId);
-    void cancelRequest(string id, string from);
+    void cancelRequest(string id, string userId);
     bool MoneyTransfer(string from, string to, int amount, vector<User>& users);
-    void saveRequests();
+    bool saveRequests();
     void loadRequests();
 };
 
