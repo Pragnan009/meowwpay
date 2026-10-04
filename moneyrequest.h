@@ -21,7 +21,7 @@ class RequestManager {
     int reqCounter = 1;
 
 public:
-    void requestMoney(string from, string to, int amount);
+    void requestMoney(string from, string to, int amount, vector<User>& users);
     void respond(string id, string userId, bool accept, vector<User>& users);
     void showRequests(string userId);
     void cancelRequest(string id, string from);
