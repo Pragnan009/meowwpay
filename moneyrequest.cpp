@@ -1,4 +1,3 @@
-
 #include "moneyrequest.h"
 #include "user.h"
 #include <iostream>
@@ -6,17 +5,25 @@
 #include <iomanip>
 using namespace std;
 
-MoneyRequest::MoneyRequest(string i, string f, string t, int a) {
-    id = i;
-    from = f;
-    to = t;
-    amount = a;
-    status = "Pending";
-}
-
-void RequestManager::requestMoney(string from, string to, int amount) {
+void RequestManager::requestMoney(string from, string to, int amount, vector<User>& users) {
     if (from == to || amount <= 0) {
         cout << "\n[!] Invalid request. Check the user IDs and amount.\n";
+        return;
+    }
+
+    bool senderFound = false, receiverFound = false;
+
+    for (auto &u : users) {
+        if (u.id == from) {
+            senderFound = true;
+        }
+        if (u.id == to) {
+            receiverFound = true;
+        }
+    }
+
+    if (!senderFound || !receiverFound) {
+        cout << "\n[!] User not found. Check the user IDs.\n";
         return;
     }
 
