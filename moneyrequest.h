@@ -10,10 +10,10 @@ class User;
 class MoneyRequest {
 public:
     string id, from, to;
-    int amount;
+    double amount;
     string status = "Pending";
 
-    MoneyRequest(string id, string from, string to, int amount);
+    MoneyRequest(string id, string from, string to, double amount);
 };
 
 class RequestManager {
@@ -23,11 +23,11 @@ class RequestManager {
     bool validId(const string& id);
 
 public:
-    void requestMoney(string from, string to, int amount, vector<User>& users);
-    void respond(string id, string userId, bool accept, vector<User>& users);
-    void showRequests(string userId);
-    void cancelRequest(string id, string userId);
-    bool MoneyTransfer(string from, string to, int amount, vector<User>& users);
+    void requestMoney(string from, string to, double amount, vector<User>& users);
+    void respond(string id, string walletId, bool accept, vector<User>& users);
+    void showRequests(string walletId);
+    void cancelRequest(string id, string walletId);
+    bool MoneyTransfer(string from, string to, double amount, vector<User>& users);
     bool saveRequests();
     void loadRequests();
 };
