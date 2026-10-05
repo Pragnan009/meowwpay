@@ -3,11 +3,25 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include <sstream>
 #include <cctype>
 
 using namespace std;
 
-MoneyRequest::MoneyRequest(string i, string f, string t, int a) {
+static string money(double a) {
+    ostringstream os;
+    os << fixed << setprecision(2) << a;
+    return os.str();
+}
+
+static void backupFile(const string& path) {
+    ifstream in(path, ios::binary);
+    if (!in) return;
+    ofstream out(path + ".bak", ios::binary);
+    out << in.rdbuf();
+}
+
+MoneyRequest::MoneyRequest(string i, string f, string t, double a) {
     id = i;
     from = f;
     to = t;
@@ -17,7 +31,6 @@ MoneyRequest::MoneyRequest(string i, string f, string t, int a) {
 
 bool RequestManager::validId(const string& id) {
     if (id.empty()) return false;
-
     for (char c : id) {
         if (isspace(static_cast<unsigned char>(c))) {
             return false;
@@ -26,21 +39,20 @@ bool RequestManager::validId(const string& id) {
     return true;
 }
 
-void RequestManager::requestMoney(string from, string to, int amount, vector<User>& users) {
+void RequestManager::requestMoney(string from, string to, double amount, vector<User>& users) {
     if (!validId(from) || !validId(to) || from == to || amount <= 0 || amount > 20000) {
-        cout << "\n[!] Invalid request. Check the user IDs and amount.\n";
+        cout << "\n[!] Invalid request. Check the Wallet IDs and amount.\n";
         return;
     }
-
     bool senderFound = false, receiverFound = false;
 
     for (auto &u : users) {
-        if (u.id == from) senderFound = true;
-        if (u.id == to) receiverFound = true;
+        if (u.WalletId == from) senderFound = true;
+        if (u.WalletId == to) receiverFound = true;
     }
 
     if (!senderFound || !receiverFound) {
-        cout << "\n[!] User not found. Check the user IDs.\n";
+        cout << "\n[!] User not found. Check the Wallet IDs.\n";
         return;
     }
 
@@ -60,19 +72,19 @@ void RequestManager::requestMoney(string from, string to, int amount, vector<Use
     cout << "Request ID : " << id << endl;
     cout << "From       : " << from << endl;
     cout << "To         : " << to << endl;
-    cout << "Amount     : Rs. " << amount << endl;
+    cout << "Amount     : Rs. " << money(amount) << endl;
     cout << "Status     : Pending" << endl;
     cout << "===================================\n";
     cout << "[+] Money request created successfully!\n";
 }
 
-bool RequestManager::MoneyTransfer(string from, string to, int amount, vector<User>& users) {
+bool RequestManager::MoneyTransfer(string from, string to, double amount, vector<User>& users) {
     User* sender = nullptr;
     User* receiver = nullptr;
 
     for (auto &u : users) {
-        if (u.id == from) sender = &u;
-        if (u.id == to) receiver = &u;
+        if (u.WalletId == from) sender = &u;
+        if (u.WalletId == to) receiver = &u;
     }
 
     if (sender == nullptr || receiver == nullptr) {
@@ -96,17 +108,17 @@ bool RequestManager::MoneyTransfer(string from, string to, int amount, vector<Us
     cout << "\n========== MONEY TRANSFER ==========\n";
     cout << "From      : " << from << endl;
     cout << "To        : " << to << endl;
-    cout << "Amount    : Rs. " << amount << endl;
+    cout << "Amount    : Rs. " << money(amount) << endl;
     cout << "Status    : Successful" << endl;
     cout << "====================================\n";
 
     return true;
 }
 
-void RequestManager::respond(string id, string userId, bool accept, vector<User>& users) {
+void RequestManager::respond(string id, string walletId, bool accept, vector<User>& users) {
     for (auto &x : requests) {
         if (x.id == id) {
-            if (x.to != userId) {
+            if (x.to != walletId) {
                 cout << "\n[!] Access denied. You cannot respond to this request.\n";
                 return;
             }
@@ -117,13 +129,13 @@ void RequestManager::respond(string id, string userId, bool accept, vector<User>
             }
 
             if (accept) {
-                
+
                 User* payer = nullptr;
                 User* receiver = nullptr;
 
                 for (auto &u : users) {
-                    if (u.id == x.to) payer = &u;
-                    if (u.id == x.from) receiver = &u;
+                    if (u.WalletId == x.to) payer = &u;
+                    if (u.WalletId == x.from) receiver = &u;
                 }
 
                 if (payer == nullptr || receiver == nullptr) {
@@ -131,8 +143,8 @@ void RequestManager::respond(string id, string userId, bool accept, vector<User>
                     return;
                 }
 
-                int oldPayerBalance = payer->balance;
-                int oldReceiverBalance = receiver->balance;
+                double oldPayerBalance = payer->balance;
+                double oldReceiverBalance = receiver->balance;
 
                 if (!MoneyTransfer(x.to, x.from, x.amount, users)) {
                     return;
@@ -169,7 +181,7 @@ void RequestManager::respond(string id, string userId, bool accept, vector<User>
     cout << "\n[!] Money request not found.\n";
 }
 
-void RequestManager::showRequests(string userId) {
+void RequestManager::showRequests(string walletId) {
     cout << "\n============== MY REQUESTS ==============\n";
     cout << left
          << setw(12) << "ID"
@@ -182,12 +194,12 @@ void RequestManager::showRequests(string userId) {
     bool found = false;
 
     for (auto &r : requests) {
-        if (r.from == userId) {
+        if (r.from == walletId) {
             cout << left
                  << setw(12) << r.id
                  << setw(15) << r.from
                  << setw(15) << r.to
-                 << setw(15) << ("Rs. " + to_string(r.amount))
+                 << setw(15) << ("Rs. " + money(r.amount))
                  << setw(15) << r.status << endl;
             found = true;
         }
@@ -207,12 +219,12 @@ void RequestManager::showRequests(string userId) {
     found = false;
 
     for (auto &r : requests) {
-        if (r.to == userId) {
+        if (r.to == walletId) {
             cout << left
                  << setw(12) << r.id
                  << setw(15) << r.from
                  << setw(15) << r.to
-                 << setw(15) << ("Rs. " + to_string(r.amount))
+                 << setw(15) << ("Rs. " + money(r.amount))
                  << setw(15) << r.status << endl;
             found = true;
         }
@@ -222,9 +234,9 @@ void RequestManager::showRequests(string userId) {
     cout << string(72, '=') << endl;
 }
 
-void RequestManager::cancelRequest(string id, string userId) {
+void RequestManager::cancelRequest(string id, string walletId) {
     for (auto &r : requests) {
-        if (r.id == id && r.from == userId) {
+        if (r.id == id && r.from == walletId) {
             if (r.status != "Pending") {
                 cout << "\n[!] Request is already processed.\n";
                 return;
@@ -253,6 +265,8 @@ bool RequestManager::saveRequests() {
         cout << "\n[!] Unable to open file for saving.\n";
         return false;
     }
+
+    fout << fixed << setprecision(2);
 
     for (const auto &r : requests) {
         fout << r.id << " "
@@ -286,14 +300,15 @@ void RequestManager::loadRequests() {
     reqCounter = 1;
 
     string id, from, to, status;
-    int amount;
+    double amount;
+    bool skipped = false;
 
     while (fin >> id >> from >> to >> amount >> status) {
         if (!validId(id) || !validId(from) || !validId(to) ||
             amount <= 0 || amount > 20000) {
+            skipped = true;
             continue;
         }
-
         MoneyRequest r(id, from, to, amount);
         r.status = status;
         requests.push_back(r);
@@ -303,10 +318,17 @@ void RequestManager::loadRequests() {
                 int number = stoi(id.substr(3));
                 if (number >= reqCounter) reqCounter = number + 1;
             } catch (...) {
-                
+
             }
         }
     }
-    fin.close();
-}
 
+    if (!fin.eof()) skipped = true;
+
+    fin.close();
+
+    if (skipped) {
+        backupFile("requests.txt");
+        cout << "\n[!] Some lines in requests.txt were invalid and skipped. The original file was saved as requests.txt.bak\n";
+    }
+}
